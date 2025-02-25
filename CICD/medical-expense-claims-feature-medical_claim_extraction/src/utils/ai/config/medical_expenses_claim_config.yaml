@@ -1,0 +1,32 @@
+agents:
+    formatter:
+        role: Expert Data Formatter
+        goal: Format the extracted Medical Expense Claim data into a structured format.
+        backstory: |
+            You are a data formatter with decades of experience in structuring Medical Expense Claim data extracted from images.
+        verbose: false
+        allow_delegation: false
+
+tasks:
+    format_task:
+        description: |
+            Format the extracted Medical Expense Claim data into a structured format. The extracted data is in the form of key-value pairs.
+            Ensure no information is missed. Remove any irrelevant details.
+            If any required information is redacted or unclear, mark it as "NOT PROVIDED".
+            
+            DATA:
+            {data}
+            
+            FIELDS TO BE EXTRACTED:
+            - Policy Issue Date
+            - Year
+            - Month
+            - Policy Number
+            - Policy Holder
+            - Premium Type
+            - Relationship
+            - Payment Date
+            - Amount
+        expected_output: |
+            A structured JSON format with key-value pairs.
+            

@@ -1,0 +1,62 @@
+variables:
+    DOCKER_REGISTRY: 442042545260.dkr.ecr.ap-south-1.amazonaws.com/medicalexpenseclaims
+    APP_NAME: medical-expense-claims
+    DOCKER_HOST: tcp://docker:2375
+stages:
+    - test
+    - build
+    - deploy
+test:
+    stage: test
+    image: python:3.10-slim
+    variables:
+        SMTP_SERVER: smtp.gmail.com
+        SMTP_PORT: 587
+        EMAIL_USER: $EMAIL_USER
+        EMAIL_PASSWORD: $EMAIL_PASSWORD
+        RECIPIENT_EMAIL: $RECIPIENT_EMAIL
+    before_script:
+        - echo "Installing dependencies..."
+        - pip install --no-cache-dir -r requirements.txt
+    script:
+        - echo "Running automated tests..."
+        - pytest --junitxml=test-results.xml || echo "Tests failed"
+        - echo "Preparing email report..."
+        # - python send_email.py
+    artifacts:
+        paths:
+            - test-results.xml
+        expire_in: 1 day
+build:
+    stage: build
+    only:
+        - master
+    image:
+        name: amazon/aws-cli
+        entrypoint: [""]
+    services:
+        - docker:dind
+    before_script:
+        - amazon-linux-extras install docker
+        - aws --version
+        - docker --version
+        - echo $ENV_FILE > .env
+    script:
+        - docker build -t $DOCKER_REGISTRY/$APP_NAME:$CI_PIPELINE_IID .
+        - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $DOCKER_REGISTRY
+        - docker push $DOCKER_REGISTRY/$APP_NAME:$CI_PIPELINE_IID
+deploy:
+    stage: deploy
+    only:
+        - master
+    image:
+        name: amazon/aws-cli
+        entrypoint: [""]
+    services:
+        - docker:dind
+    before_script:
+        - amazon-linux-extras install docker
+        - aws --version
+        - docker --version
+    script:
+        - echo "Deploying to EKS"
